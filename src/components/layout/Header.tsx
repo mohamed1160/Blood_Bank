@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, Menu, LogOut, CheckCircle2, ShieldCheck, UserCheck, Stethoscope, Building2, User } from 'lucide-react'
+import { Bell, Menu, LogOut, CheckCircle2, Globe } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { useI18n } from '../../i18n/I18nContext'
 import { notificationService } from '../../services/notificationService'
-import { UserRole } from '../../types'
 import { cn } from '../../lib/utils'
+import { AccountRoleSwitcher } from './AccountRoleSwitcher'
+import { ThemeToggle } from './ThemeToggle'
 
 export interface HeaderProps {
   onToggleMobileNav: () => void
 }
 
 export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
-  const { currentUser, role, switchRole, logout, isDemoMode } = useAuth()
+  const { currentUser, role, logout, isDemoMode } = useAuth()
+  const { language, setLanguage, t, isRtl } = useI18n()
   const [unreadCount, setUnreadCount] = useState<number>(0)
   const navigate = useNavigate()
 
@@ -25,19 +28,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/login')
+    navigate('/')
   }
 
-  const roleOptions: { role: UserRole; label: string; icon: React.ReactNode }[] = [
-    { role: 'admin', label: 'Admin', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-    { role: 'hospital', label: 'Hospital', icon: <Building2 className="w-3.5 h-3.5" /> },
-    { role: 'doctor', label: 'Doctor', icon: <Stethoscope className="w-3.5 h-3.5" /> },
-    { role: 'patient', label: 'Patient', icon: <User className="w-3.5 h-3.5" /> },
-    { role: 'donor', label: 'Donor', icon: <UserCheck className="w-3.5 h-3.5" /> },
-  ]
-
   return (
-    <header className="h-16 bg-white border-b border-borderNeutral flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-sm">
+    <header className="h-16 bg-white dark:bg-navy-900 border-b border-borderNeutral dark:border-navy-800 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-sm transition-colors duration-200">
       {/* Left: Mobile Toggle & Status indicator */}
       <div className="flex items-center gap-3">
         <button
@@ -50,48 +45,43 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
 
         {/* Demo Mode / Supabase Mode Badge */}
         {isDemoMode ? (
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11px] font-medium">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             <span>Interactive Demo Mode</span>
           </div>
         ) : (
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Live Supabase Connected</span>
           </div>
         )}
       </div>
 
-      {/* Center: Role Switcher for instant role preview */}
-      <div className="flex items-center gap-1 bg-surface-muted p-1 rounded-lg border border-borderNeutral overflow-x-auto max-w-[420px]">
-        <span className="text-[10px] uppercase font-bold text-secondaryText px-2 hidden md:inline">
-          Role:
-        </span>
-        {roleOptions.map((opt) => (
-          <button
-            key={opt.role}
-            onClick={() => switchRole(opt.role)}
-            className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150',
-              role === opt.role
-                ? 'bg-white text-navy font-bold shadow-sm border border-borderNeutral'
-                : 'text-secondaryText hover:text-primaryText hover:bg-white/50'
-            )}
-            title={`Switch to ${opt.label} perspective`}
-          >
-            {opt.icon}
-            <span className="capitalize">{opt.label}</span>
-          </button>
-        ))}
+      {/* Center: Account & Role Switcher */}
+      <div className="flex items-center gap-2">
+        <AccountRoleSwitcher />
       </div>
 
-      {/* Right: Notification Bell & User Actions */}
-      <div className="flex items-center gap-3">
+      {/* Right: Theme Toggle, Language Switcher, Notification Bell & User Actions */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Dark Mode Toggle */}
+        <ThemeToggle />
+
+        {/* Language Switcher */}
+        <button
+          onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-borderNeutral bg-white dark:bg-navy-800 text-xs font-semibold text-navy dark:text-slate-200 hover:bg-surface-muted transition-colors shadow-2xs"
+          title={language === 'en' ? 'التحويل إلى اللغة العربية' : 'Switch to English'}
+        >
+          <Globe className="w-3.5 h-3.5 text-medical" />
+          <span>{language === 'en' ? 'العربية' : 'English'}</span>
+        </button>
+
         {/* Notifications */}
         <Link
           to="/notifications"
           className="relative p-2 rounded-lg text-secondaryText hover:text-primaryText hover:bg-surface-muted transition-colors"
-          title="Notifications"
+          title={t('nav.notifications')}
         >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
@@ -102,18 +92,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
         </Link>
 
         {/* User Pill */}
-        <div className="hidden md:flex items-center gap-2 pl-2 border-l border-borderNeutral">
-          <div className="text-right">
-            <p className="text-xs font-bold text-primaryText leading-none">{currentUser?.fullName}</p>
-            <p className="text-[10px] text-secondaryText font-medium mt-0.5 capitalize">{currentUser?.role}</p>
+        <div className="hidden md:flex items-center gap-2 px-2 border-x border-borderNeutral dark:border-navy-700">
+          <div className={cn(isRtl ? 'text-left' : 'text-right')}>
+            <p className="text-xs font-bold text-primaryText dark:text-slate-200 leading-none">{currentUser?.fullName}</p>
+            <p className="text-[10px] text-secondaryText font-medium mt-0.5 capitalize">{t(`role.${currentUser?.role || 'donor'}`)}</p>
           </div>
         </div>
 
-        {/* Sign Out */}
+        {/* Sign Out / Exit to Guest */}
         <button
           onClick={handleLogout}
-          className="p-2 rounded-lg text-secondaryText hover:text-medical hover:bg-medical-50 transition-colors"
-          title="Sign out"
+          className="p-2 rounded-lg text-secondaryText hover:text-medical hover:bg-medical-50 dark:hover:bg-medical-950/40 transition-colors"
+          title={language === 'ar' ? 'تسجيل الخروج والعودة للزائر' : 'Sign out (Return to Guest)'}
         >
           <LogOut className="w-4 h-4" />
         </button>

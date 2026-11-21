@@ -22,6 +22,11 @@ import { MedicalReportsPage } from '../features/medical-reports/MedicalReportsPa
 import { DonorsPage } from '../features/donors/DonorsPage'
 import { NotificationsPage } from '../features/notifications/NotificationsPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { TransfersPage } from '../features/transfers/TransfersPage'
+import { CompatibilityPage } from '../features/compatibility/CompatibilityPage'
+import { AnnouncementsPage } from '../features/announcements/AnnouncementsPage'
+import { BloodAnalyzerPage } from '../features/blood-analyzer/BloodAnalyzerPage'
+import { ExcelImportPage } from '../features/excel-import/ExcelImportPage'
 import { Button } from '../components/ui/Button'
 import { ArrowLeft } from 'lucide-react'
 
@@ -104,6 +109,15 @@ export const AppRoutes: React.FC = () => {
         />
 
         <Route
+          path="/transfers"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'hospital']}>
+              <TransfersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/emergency"
           element={
             <ProtectedRoute allowedRoles={['hospital', 'doctor']}>
@@ -111,6 +125,9 @@ export const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/compatibility" element={<CompatibilityPage />} />
+        <Route path="/announcements" element={<AnnouncementsPage />} />
 
         <Route
           path="/analytics"
@@ -126,6 +143,24 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute allowedRoles={['doctor', 'hospital', 'patient']}>
               <MedicalReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/blood-analyzer"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'hospital', 'doctor', 'patient', 'donor']}>
+              <BloodAnalyzerPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/excel-import"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'hospital', 'doctor']}>
+              <ExcelImportPage />
             </ProtectedRoute>
           }
         />

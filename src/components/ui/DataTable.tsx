@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { ChevronDown, ChevronUp, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { EmptyState } from '../shared/EmptyState'
+import { useI18n } from '../../i18n/I18nContext'
 
 export interface Column<T> {
   header: string
@@ -15,6 +16,8 @@ export interface DataTableProps<T> {
   columns: Column<T>[]
   data: T[]
   pageSize?: number
+  isLoading?: boolean
+  keyExtractor?: (row: T) => string
   emptyTitle?: string
   emptyDescription?: string
   emptyAction?: React.ReactNode
@@ -26,12 +29,18 @@ export function DataTable<T extends Record<string, any>>({
   columns,
   data,
   pageSize = 10,
-  emptyTitle = 'No records found',
-  emptyDescription = 'There are no items matching the current query.',
+  isLoading = false,
+  keyExtractor,
+  emptyTitle,
+  emptyDescription,
   emptyAction,
   onRowClick,
   className,
 }: DataTableProps<T>) {
+  const { language } = useI18n()
+  const isAr = language === 'ar'
+  const resolvedEmptyTitle = emptyTitle || (isAr ? 'لا توجد سجلات' : 'No records found')
+  const resolvedEmptyDesc = emptyDescription || (isAr ? 'لا توجد بيانات مطابقة للبحث الحالي.' : 'There are no items matching the current query.')
   const [sortKey, setSortKey] = useState<keyof T | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [currentPage, setCurrentPage] = useState<number>(1)
@@ -65,10 +74,18 @@ export function DataTable<T extends Record<string, any>>({
     return sortedData.slice(start, start + pageSize)
   }, [sortedData, currentPage, pageSize])
 
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-borderNeutral bg-white p-8 shadow-card text-center text-xs text-secondaryText">
+        {isAr ? 'جاري تحميل البيانات...' : 'Loading records...'}
+      </div>
+    )
+  }
+
   if (data.length === 0) {
     return (
       <div className="rounded-xl border border-borderNeutral bg-white p-6 shadow-card">
-        <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
+        <EmptyState title={resolvedEmptyTitle} description={resolvedEmptyDesc} action={emptyAction} />
       </div>
     )
   }
@@ -76,7 +93,7 @@ export function DataTable<T extends Record<string, any>>({
   return (
     <div className={cn('rounded-xl border border-borderNeutral bg-white shadow-card overflow-hidden', className)}>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-primaryText">
+        <table className="w-full text-left rtl:text-right text-sm text-primaryText">
           <thead className="bg-surface-muted/80 text-xs uppercase font-semibold text-secondaryText border-b border-borderNeutral">
             <tr>
               {columns.map((col, idx) => (

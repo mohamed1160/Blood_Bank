@@ -1,10 +1,31 @@
 import { isSupabaseConfigured, supabase } from './supabase'
 import { INITIAL_BLOOD_UNITS } from './mockData'
-import { BloodUnit, BloodType, ComponentType, UnitStatus } from '../types'
+import { BloodUnit, BloodType, UnitStatus } from '../types'
 import { getDaysUntilExpiry } from '../lib/utils'
 
+const INVENTORY_KEY = 'blood_bank_inventory_data'
+
+function loadInventory(): BloodUnit[] {
+  try {
+    const raw = localStorage.getItem(INVENTORY_KEY)
+    if (raw) return JSON.parse(raw) as BloodUnit[]
+  } catch {
+    // ignore
+  }
+  return [...INITIAL_BLOOD_UNITS]
+}
+
+function saveInventory(units: BloodUnit[]) {
+  try {
+    localStorage.setItem(INVENTORY_KEY, JSON.stringify(units))
+    window.dispatchEvent(new CustomEvent('bloodbank:data-updated', { detail: { key: INVENTORY_KEY } }))
+  } catch {
+    // ignore
+  }
+}
+
 class InventoryService {
-  private units: BloodUnit[] = [...INITIAL_BLOOD_UNITS]
+  private units: BloodUnit[] = loadInventory()
 
   async getUnits(hospitalId?: string): Promise<BloodUnit[]> {
     if (isSupabaseConfigured() && supabase) {
@@ -16,11 +37,10 @@ class InventoryService {
       if (!error && data) return data as BloodUnit[]
     }
 
-    // Auto-update expired units based on expirationDate
-    this.units = this.units.map((u) => {
+    this.units = loadInventory().map((u) => {
       const days = getDaysUntilExpiry(u.expirationDate)
       if (days < 0 && u.status === 'Available') {
-        return { ...u, status: 'Expired', lastUpdated: new Date().toISOString() }
+        return { ...u, status: 'Expired' as UnitStatus, lastUpdated: new Date().toISOString() }
       }
       return u
     })
@@ -31,11 +51,14 @@ class InventoryService {
     return [...this.units]
   }
 
-  async addUnit(unit: Omit<BloodUnit, 'id' | 'unitNumber' | 'lastUpdated'>): Promise<BloodUnit> {
-    const unitNumber = `BU-${new Date().getFullYear()}-${String(this.units.length + 1).padStart(3, '0')}`
+  async addUnit(unit: Omit<BloodUnit, 'id' | 'unitNumber' | 'lastUpdated'> & { unitNumber?: string }): Promise<BloodUnit> {
+    this.units = loadInventory()
+    const unitNumber =
+      unit.unitNumber ||
+      `BU-${new Date().getFullYear()}-${String(this.units.length + 1).padStart(3, '0')}`
     const newUnit: BloodUnit = {
       ...unit,
-      id: `unit-${Date.now()}`,
+      id: `unit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       unitNumber,
       lastUpdated: new Date().toISOString(),
     }
@@ -46,6 +69,7 @@ class InventoryService {
     }
 
     this.units.unshift(newUnit)
+    saveInventory(this.units)
     return newUnit
   }
 
@@ -60,6 +84,7 @@ class InventoryService {
       return data as BloodUnit
     }
 
+    this.units = loadInventory()
     const idx = this.units.findIndex((u) => u.id === id)
     if (idx !== -1) {
       this.units[idx] = {
@@ -67,12 +92,14 @@ class InventoryService {
         ...updates,
         lastUpdated: new Date().toISOString(),
       }
+      saveInventory(this.units)
       return this.units[idx]
     }
     return null
   }
 
   async updateStatus(id: string, status: UnitStatus): Promise<BloodUnit | null> {
+    this.units = loadInventory()
     const target = this.units.find((u) => u.id === id)
     if (target && status === 'Allocated') {
       const days = getDaysUntilExpiry(target.expirationDate)
@@ -83,7 +110,7 @@ class InventoryService {
     return this.updateUnit(id, { status })
   }
 
-  getLowStockAlerts(units: BloodUnit[]): { bloodType: BloodType; count: number }[] {
+  getLowStockAlerts(units: BloodUnit[]): { bloodType: BloodType; count: number; currentCount: number }[] {
     const counts: Record<BloodType, number> = {
       'O-': 0, 'O+': 0, 'A-': 0, 'A+': 0,
       'B-': 0, 'B+': 0, 'AB-': 0, 'AB+': 0,
@@ -100,6 +127,7 @@ class InventoryService {
       .map(([bloodType, count]) => ({
         bloodType: bloodType as BloodType,
         count,
+        currentCount: count,
       }))
   }
 
@@ -113,4 +141,4 @@ class InventoryService {
 }
 
 export const inventoryService = new InventoryService()
-export const bloodInventoryService = inventoryService // Alias for prompt compatibility
+export const bloodInventoryService = inventoryService

@@ -3,8 +3,29 @@ import { INITIAL_DONORS, INITIAL_DONATIONS, INITIAL_INVITATIONS } from './mockDa
 import { DonorProfile, Donation, DonorInvitation, EligibilityStatus, BloodType } from '../types'
 import { getCompatibleDonorTypes } from '../lib/utils'
 
+const DONORS_KEY = 'blood_bank_donors_data'
+
+function loadDonors(): DonorProfile[] {
+  try {
+    const raw = localStorage.getItem(DONORS_KEY)
+    if (raw) return JSON.parse(raw) as DonorProfile[]
+  } catch {
+    // ignore
+  }
+  return [...INITIAL_DONORS]
+}
+
+function saveDonors(list: DonorProfile[]) {
+  try {
+    localStorage.setItem(DONORS_KEY, JSON.stringify(list))
+    window.dispatchEvent(new CustomEvent('bloodbank:data-updated', { detail: { key: DONORS_KEY } }))
+  } catch {
+    // ignore
+  }
+}
+
 class DonorService {
-  private donors: DonorProfile[] = [...INITIAL_DONORS]
+  private donors: DonorProfile[] = loadDonors()
   private donations: Donation[] = [...INITIAL_DONATIONS]
   private invitations: DonorInvitation[] = [...INITIAL_INVITATIONS]
 
@@ -13,7 +34,19 @@ class DonorService {
       const { data } = await supabase.from('donor_profiles').select('*')
       if (data) return data as DonorProfile[]
     }
+    this.donors = loadDonors()
     return [...this.donors]
+  }
+
+  async addDonor(donor: Omit<DonorProfile, 'id'>): Promise<DonorProfile> {
+    this.donors = loadDonors()
+    const newDonor: DonorProfile = {
+      ...donor,
+      id: `don-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    }
+    this.donors.unshift(newDonor)
+    saveDonors(this.donors)
+    return newDonor
   }
 
   async getDonorByUserId(userId: string): Promise<DonorProfile | null> {
@@ -27,6 +60,7 @@ class DonorService {
     reason?: string,
     reassessmentDate?: string
   ): Promise<DonorProfile | null> {
+    this.donors = loadDonors()
     const idx = this.donors.findIndex((d) => d.id === donorId)
     if (idx === -1) return null
 
@@ -36,6 +70,7 @@ class DonorService {
       ineligibilityReason: reason,
       reassessmentDate,
     }
+    saveDonors(this.donors)
     return this.donors[idx]
   }
 
@@ -85,13 +120,9 @@ class DonorService {
     const allDonors = await this.getDonors()
 
     return allDonors.filter((d) => {
-      // Must have verified blood type
       if (!d.isVerified) return false
-      // Must be clinically eligible
       if (d.eligibilityStatus !== 'Eligible') return false
-      // Must have given emergency contact consent
       if (!d.consentEmergencyContact) return false
-      // Must have compatible blood type
       return compatibleTypes.includes(d.bloodType)
     })
   }

@@ -18,12 +18,14 @@ import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../../hooks/useAuth'
+import { useI18n } from '../../i18n/I18nContext'
 import { donorService } from '../../services/donorService'
 import { DonorProfile, Donation, DonorInvitation, EligibilityStatus, BloodType } from '../../types'
 import { formatDate } from '../../lib/utils'
 
 export const DonorsPage: React.FC = () => {
   const { role, currentUser } = useAuth()
+  const { t, language } = useI18n()
   const [donors, setDonors] = useState<DonorProfile[]>([])
   const [donations, setDonations] = useState<Donation[]>([])
   const [invitations, setInvitations] = useState<DonorInvitation[]>([])
@@ -68,7 +70,11 @@ export const DonorsPage: React.FC = () => {
 
   const handleOpenInvite = (d: DonorProfile) => {
     setInviteDonor(d)
-    setInviteMessage(`Urgent need for ${d.bloodType} blood units at Metropolitan General Hospital.`)
+    setInviteMessage(
+      language === 'ar'
+        ? `حاجة ماسة وعاجلة لوحدات دم من فصيلة ${d.bloodType} في مستشفى متروبوليتان العام.`
+        : `Urgent need for ${d.bloodType} blood units at Metropolitan General Hospital.`
+    )
     setInviteSentSuccess(false)
     setInviteModalOpen(true)
   }
@@ -110,7 +116,7 @@ export const DonorsPage: React.FC = () => {
 
   const donorColumns: Column<DonorProfile>[] = [
     {
-      header: 'Donor Identifier',
+      header: language === 'ar' ? 'معرف المتبرع والمدينة' : 'Donor Identifier',
       accessorKey: 'id',
       sortable: true,
       cell: (row) => (
@@ -121,14 +127,14 @@ export const DonorsPage: React.FC = () => {
       ),
     },
     {
-      header: 'Blood Group',
+      header: language === 'ar' ? 'فصيلة الدم' : 'Blood Group',
       accessorKey: 'bloodType',
       sortable: true,
       cell: (row) => (
         <div className="flex items-center gap-1.5">
           <StatusBadge variant="blood">{row.bloodType}</StatusBadge>
           {row.isVerified && (
-            <span title="Lab Verified">
+            <span title={language === 'ar' ? 'فصيلة موثقة مخبرياً' : 'Lab Verified'}>
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             </span>
           )}
@@ -136,25 +142,25 @@ export const DonorsPage: React.FC = () => {
       ),
     },
     {
-      header: 'Clinical Eligibility',
+      header: language === 'ar' ? 'الأهلية السريرية' : 'Clinical Eligibility',
       accessorKey: 'eligibilityStatus',
       sortable: true,
-      cell: (row) => <StatusBadge status={row.eligibilityStatus}>{row.eligibilityStatus}</StatusBadge>,
+      cell: (row) => <StatusBadge status={row.eligibilityStatus}>{t(`status.${row.eligibilityStatus.toLowerCase().replace(' ', '')}`) || row.eligibilityStatus}</StatusBadge>,
     },
     {
-      header: 'Donations',
+      header: language === 'ar' ? 'مرات التبرع' : 'Donations',
       accessorKey: 'totalDonations',
       sortable: true,
-      cell: (row) => `${row.totalDonations} completed`,
+      cell: (row) => `${row.totalDonations} ${language === 'ar' ? 'تبرعات مكتملة' : 'completed'}`,
     },
     {
-      header: 'Last Donation Date',
+      header: language === 'ar' ? 'آخر تبرع' : 'Last Donation Date',
       accessorKey: 'lastDonationDate',
       sortable: true,
       cell: (row) => formatDate(row.lastDonationDate),
     },
     {
-      header: 'Actions',
+      header: language === 'ar' ? 'الإجراءات' : 'Actions',
       cell: (row) => (
         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           <Button
@@ -167,7 +173,7 @@ export const DonorsPage: React.FC = () => {
             leftIcon={<Eye className="w-3.5 h-3.5" />}
             className="text-xs h-7 px-2"
           >
-            Profile
+            {language === 'ar' ? 'الملف' : 'Profile'}
           </Button>
           {(role === 'hospital' || role === 'admin') && row.eligibilityStatus === 'Eligible' && (
             <Button
@@ -177,7 +183,7 @@ export const DonorsPage: React.FC = () => {
               leftIcon={<Send className="w-3 h-3" />}
               className="text-xs h-7 px-2"
             >
-              Invite
+              {language === 'ar' ? 'دعوة' : 'Invite'}
             </Button>
           )}
           {(role === 'hospital' || role === 'admin') && (
@@ -187,7 +193,7 @@ export const DonorsPage: React.FC = () => {
               onClick={() => handleOpenEligibility(row)}
               className="text-xs h-7 px-2 text-medical"
             >
-              Assess
+              {language === 'ar' ? 'تقييم الأهلية' : 'Assess'}
             </Button>
           )}
         </div>
@@ -198,24 +204,34 @@ export const DonorsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Donor Management & Outreach"
-        subtitle="Transparent clinical eligibility workflows, donation intervals, and emergency callouts."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Donors' }]}
+        title={t('nav.donors')}
+        subtitle={
+          language === 'ar'
+            ? 'سجل المتبرعين المتطوعين، وتقييم الأهلية السريرية، ومتابعة فترات الراحة واستدعاءات الطوارئ.'
+            : 'Transparent clinical eligibility workflows, donation intervals, and emergency callouts.'
+        }
+        breadcrumbs={[{ label: t('nav.dashboard'), href: '/dashboard' }, { label: t('nav.donors') }]}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="p-4 bg-white rounded-xl border border-borderNeutral shadow-card space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-secondaryText">Total Registered Donors</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-secondaryText">
+            {language === 'ar' ? 'إجمالي المتبرعين المسجلين' : 'Total Registered Donors'}
+          </span>
           <p className="text-2xl font-bold text-primaryText">{donors.length}</p>
         </div>
         <div className="p-4 bg-white rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-card space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Eligible For Immediate Donation</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+            {language === 'ar' ? 'مؤهلون للتبرع الفوري' : 'Eligible For Immediate Donation'}
+          </span>
           <p className="text-2xl font-bold text-emerald-700">
             {donors.filter((d) => d.eligibilityStatus === 'Eligible').length}
           </p>
         </div>
         <div className="p-4 bg-white rounded-xl border border-amber-200 bg-amber-50/20 shadow-card space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Temporarily Deferred / In Rest</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            {language === 'ar' ? 'مؤجلون مؤقتاً (فترة الراحة)' : 'Temporarily Deferred / In Rest'}
+          </span>
           <p className="text-2xl font-bold text-amber-700">
             {donors.filter((d) => d.eligibilityStatus === 'Temporarily Deferred').length}
           </p>
@@ -229,6 +245,7 @@ export const DonorsPage: React.FC = () => {
           setSelectedDonor(row)
           setIsDrawerOpen(true)
         }}
+        emptyTitle={language === 'ar' ? 'لا يوجد متبرعون مسجلون' : 'No donors found'}
       />
 
       {/* Donor Details Drawer */}
@@ -237,160 +254,165 @@ export const DonorsPage: React.FC = () => {
         onClose={() => setIsDrawerOpen(false)}
         variant="drawer"
         size="md"
-        title="Donor Clinical Dossier"
-        subtitle={selectedDonor ? `ID: ${selectedDonor.id}` : ''}
+        title={language === 'ar' ? 'الملف السريري للمتبرع' : 'Donor Clinical Dossier'}
       >
         {selectedDonor && (
           <div className="space-y-5 text-xs text-secondaryText">
-            <div className="p-4 bg-surface rounded-xl border border-borderNeutral space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-primaryText">Blood Group: {selectedDonor.bloodType}</span>
-                <StatusBadge status={selectedDonor.eligibilityStatus}>{selectedDonor.eligibilityStatus}</StatusBadge>
+            <div className="p-4 bg-surface rounded-xl border border-borderNeutral flex items-center justify-between">
+              <div>
+                <span className="font-mono text-xs font-bold text-navy block">{selectedDonor.id}</span>
+                <p className="text-primaryText font-medium mt-0.5">{selectedDonor.city}</p>
               </div>
-              <p>Total Completed Donations: <strong className="text-primaryText">{selectedDonor.totalDonations}</strong></p>
-              <p>Last Donation Date: {formatDate(selectedDonor.lastDonationDate)}</p>
-              {selectedDonor.ineligibilityReason && (
-                <div className="p-2.5 bg-amber-50 rounded border border-amber-200 text-amber-900 mt-2">
-                  <strong>Deferral Reason:</strong> {selectedDonor.ineligibilityReason}
-                  {selectedDonor.reassessmentDate && (
-                    <span className="block mt-1">Reassessment Date: {formatDate(selectedDonor.reassessmentDate)}</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <h5 className="font-bold uppercase tracking-wider text-[11px] text-navy">Consent & Notification Preferences</h5>
-              <div className="p-3 bg-white rounded-xl border border-borderNeutral space-y-2">
-                <div className="flex items-center justify-between">
-                  <span>Emergency Shortage Contact Consent:</span>
-                  <span className={selectedDonor.consentEmergencyContact ? 'font-bold text-emerald-600' : 'text-slate-400'}>
-                    {selectedDonor.consentEmergencyContact ? 'Consented' : 'No'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>SMS Real-Time Callout Alerts:</span>
-                  <span className={selectedDonor.consentSmsAlerts ? 'font-bold text-emerald-600' : 'text-slate-400'}>
-                    {selectedDonor.consentSmsAlerts ? 'Active' : 'Disabled'}
-                  </span>
-                </div>
+              <div className="text-right rtl:text-left">
+                <span className="text-2xl font-black text-medical block">{selectedDonor.bloodType}</span>
+                <StatusBadge status={selectedDonor.eligibilityStatus}>
+                  {t(`status.${selectedDonor.eligibilityStatus.toLowerCase().replace(' ', '')}`) || selectedDonor.eligibilityStatus}
+                </StatusBadge>
               </div>
             </div>
 
-            {/* Past donation logs */}
             <div className="space-y-2">
-              <h5 className="font-bold uppercase tracking-wider text-[11px] text-navy">Recent Donation Appointments</h5>
-              <div className="space-y-2">
-                {donations.map((dn) => (
-                  <div key={dn.id} className="p-2.5 bg-surface rounded-lg border border-borderNeutral">
-                    <span className="font-semibold text-primaryText block">{dn.centerName}</span>
-                    <span className="text-[11px] text-secondaryText">
-                      {formatDate(dn.donationDate)} • {dn.volumeMl}mL ({dn.component}) • Status: {dn.status}
-                    </span>
-                  </div>
-                ))}
+              <h4 className="font-bold uppercase tracking-wider text-navy text-[11px]">
+                {language === 'ar' ? 'المعايير السريرية والفحوصات المخبرية:' : 'Clinical Screening & Lab Indicators:'}
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 bg-white rounded-lg border border-borderNeutral">
+                  <span className="text-[10px] text-secondaryText block">{language === 'ar' ? 'الهيموجلوبين' : 'Hemoglobin (Hb)'}</span>
+                  <strong className="text-primaryText">{language === 'ar' ? 'غير مسجل' : 'Not recorded'}</strong>
+                </div>
+                <div className="p-2.5 bg-white rounded-lg border border-borderNeutral">
+                  <span className="text-[10px] text-secondaryText block">{language === 'ar' ? 'ضغط الدم' : 'Blood Pressure'}</span>
+                  <strong className="text-primaryText">{language === 'ar' ? 'غير مسجل' : 'Not recorded'}</strong>
+                </div>
+                <div className="p-2.5 bg-white rounded-lg border border-borderNeutral">
+                  <span className="text-[10px] text-secondaryText block">{language === 'ar' ? 'النبض' : 'Pulse Rate'}</span>
+                  <strong className="text-primaryText">{language === 'ar' ? 'غير مسجل' : 'Not recorded'}</strong>
+                </div>
+                <div className="p-2.5 bg-white rounded-lg border border-borderNeutral">
+                  <span className="text-[10px] text-secondaryText block">{language === 'ar' ? 'فحص العدوى' : 'Infection Screen'}</span>
+                  <strong className="text-emerald-600">{language === 'ar' ? 'يتطلب تقييماً طبياً' : 'Requires medical assessment'}</strong>
+                </div>
               </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+              <strong className="block text-primaryText">{language === 'ar' ? 'تاريخ التبرع القادم المحتمل:' : 'Next Permitted Donation:'}</strong>
+              <p className="font-mono text-emerald-700 font-bold">
+                {selectedDonor.reassessmentDate || (language === 'ar' ? 'يحددها الطبيب المختص' : 'To be set by authorized medical staff')}
+              </p>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Eligibility Assessment Modal */}
+      {/* Invite Modal */}
       <Modal
-        isOpen={eligibilityModalOpen}
-        onClose={() => setEligibilityModalOpen(false)}
-        title="Clinical Eligibility Assessment"
-        subtitle="Authorized physician / nurse assessment record"
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        title={language === 'ar' ? 'إرسال دعوة تبرع طارئة للمتبرع' : 'Dispatch Emergency Donation Invitation'}
+        subtitle={inviteDonor ? `${inviteDonor.id} • ${inviteDonor.bloodType}` : ''}
       >
-        <form onSubmit={handleSaveEligibility} className="space-y-4 text-xs">
+        <form onSubmit={handleSendInvite} className="space-y-4">
+          {inviteSentSuccess && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-800">
+              {language === 'ar' ? 'تم إرسال الدعوة للمتبرع بنجاح!' : 'Invitation successfully dispatched to donor via SMS and app notification!'}
+            </div>
+          )}
+
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-              Eligibility Status *
+            <label className="block text-xs font-semibold text-secondaryText mb-1">
+              {language === 'ar' ? 'درجة الإلحاح' : 'Urgency Level'}
             </label>
             <select
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value as EligibilityStatus)}
+              value={inviteUrgency}
+              onChange={(e) => setInviteUrgency(e.target.value as any)}
               className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none"
             >
-              <option value="Eligible">Eligible (Meets all clinical criteria)</option>
-              <option value="Temporarily Deferred">Temporarily Deferred (e.g. interval rest, travel, mild symptoms)</option>
-              <option value="Not Eligible">Not Eligible (Chronic medical contraindication)</option>
-              <option value="Needs Review">Needs Review (Awaiting confirmatory lab test)</option>
+              <option value="Standard">{language === 'ar' ? 'قياسي' : 'Standard'}</option>
+              <option value="Urgent">{language === 'ar' ? 'عاجل' : 'Urgent'}</option>
+              <option value="Critical Shortage">{language === 'ar' ? 'نقص حاد وطارئ' : 'Critical Shortage'}</option>
             </select>
           </div>
 
-          <Input
-            label="Clinical Assessment Reason / Notes"
-            value={newReason}
-            onChange={(e) => setNewReason(e.target.value)}
-            placeholder="e.g. Completed mandatory 56-day rest cycle without adverse effects."
-          />
-
-          <Input
-            label="Next Reassessment / Clearance Date"
-            type="date"
-            value={newReassessmentDate}
-            onChange={(e) => setNewReassessmentDate(e.target.value)}
-          />
+          <div>
+            <label className="block text-xs font-semibold text-secondaryText mb-1">
+              {language === 'ar' ? 'نص الرسالة' : 'Invitation Message'}
+            </label>
+            <textarea
+              rows={3}
+              value={inviteMessage}
+              onChange={(e) => setInviteMessage(e.target.value)}
+              required
+              className="w-full rounded-lg border border-borderNeutral bg-white p-3 text-xs text-primaryText focus:border-navy-500 focus:outline-none"
+            />
+          </div>
 
           <div className="pt-3 border-t border-borderNeutral flex justify-end gap-2">
-            <Button variant="ghost" size="sm" type="button" onClick={() => setEligibilityModalOpen(false)}>
-              Cancel
+            <Button variant="ghost" size="sm" type="button" onClick={() => setInviteModalOpen(false)}>
+              {t('action.cancel')}
             </Button>
             <Button variant="primary" size="sm" type="submit">
-              Save Assessment
+              {language === 'ar' ? 'إرسال الدعوة' : 'Dispatch Invite'}
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Dispatch Invitation Modal */}
+      {/* Eligibility Modal */}
       <Modal
-        isOpen={inviteModalOpen}
-        onClose={() => setInviteModalOpen(false)}
-        title="Dispatch Donor Callout"
-        subtitle={inviteDonor ? `Target: Donor ${inviteDonor.id} (${inviteDonor.bloodType})` : ''}
+        isOpen={eligibilityModalOpen}
+        onClose={() => setEligibilityModalOpen(false)}
+        title={language === 'ar' ? 'تقييم الأهلية الطبية للمتبرع' : 'Update Clinical Donor Eligibility Assessment'}
+        subtitle={selectedDonor ? `${selectedDonor.id} • ${selectedDonor.bloodType}` : ''}
       >
-        {inviteSentSuccess ? (
-          <div className="py-6 text-center space-y-2">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
-            <p className="text-sm font-bold text-primaryText">Invitation Dispatched!</p>
-            <p className="text-xs text-secondaryText">Donor has been notified via their preferred notification channel.</p>
+        <form onSubmit={handleSaveEligibility} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-secondaryText mb-1">
+              {language === 'ar' ? 'حالة الأهلية السريرية' : 'Eligibility Status'}
+            </label>
+            <select
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value as EligibilityStatus)}
+              className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none font-bold"
+            >
+              <option value="Eligible">{language === 'ar' ? 'مؤهل للتبرع' : 'Eligible'}</option>
+              <option value="Temporarily Deferred">{language === 'ar' ? 'مؤجل مؤقتاً (فترة راحة)' : 'Temporarily Deferred'}</option>
+              <option value="Not Eligible">{language === 'ar' ? 'غير مؤهل طبياً' : 'Not Eligible'}</option>
+              <option value="Needs Review">{language === 'ar' ? 'يتطلب مراجعة سريرية' : 'Needs Review'}</option>
+            </select>
           </div>
-        ) : (
-          <form onSubmit={handleSendInvite} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-                Urgency Priority
-              </label>
-              <select
-                value={inviteUrgency}
-                onChange={(e) => setInviteUrgency(e.target.value as any)}
-                className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none"
-              >
-                <option value="Standard">Standard Routine Collection</option>
-                <option value="Urgent">Urgent Hospital Need</option>
-                <option value="Critical Shortage">Critical Shortage (Trauma Emergency)</option>
-              </select>
-            </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-secondaryText mb-1">
+              {language === 'ar' ? 'سبب التأجيل أو القرار الطبي' : 'Clinical Reason / Notes'}
+            </label>
             <Input
-              label="Notification Message"
-              value={inviteMessage}
-              onChange={(e) => setInviteMessage(e.target.value)}
-              required
+              value={newReason}
+              onChange={(e) => setNewReason(e.target.value)}
+              placeholder={language === 'ar' ? 'مثال: انخفاض الهيموجلوبين، سفر حديث...' : 'e.g., Low hemoglobin, recent travel, recent antibiotics...'}
             />
+          </div>
 
-            <div className="pt-3 border-t border-borderNeutral flex justify-end gap-2">
-              <Button variant="ghost" size="sm" type="button" onClick={() => setInviteModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" size="sm" type="submit" leftIcon={<Send className="w-4 h-4" />}>
-                Send Invitation
-              </Button>
-            </div>
-          </form>
-        )}
+          <div>
+            <label className="block text-xs font-semibold text-secondaryText mb-1">
+              {language === 'ar' ? 'تاريخ إعادة التقييم المسموح' : 'Next Reassessment Date'}
+            </label>
+            <Input
+              type="date"
+              value={newReassessmentDate}
+              onChange={(e) => setNewReassessmentDate(e.target.value)}
+            />
+          </div>
+
+          <div className="pt-3 border-t border-borderNeutral flex justify-end gap-2">
+            <Button variant="ghost" size="sm" type="button" onClick={() => setEligibilityModalOpen(false)}>
+              {t('action.cancel')}
+            </Button>
+            <Button variant="primary" size="sm" type="submit">
+              {t('action.save')}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   )

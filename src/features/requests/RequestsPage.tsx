@@ -23,12 +23,15 @@ import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../../hooks/useAuth'
+import { useI18n } from '../../i18n/I18nContext'
 import { requestsService } from '../../services/requestsService'
 import { BloodRequest, BloodType, ComponentType, RequestPriority, RequestStatus } from '../../types'
 import { formatDate, formatDateTime } from '../../lib/utils'
+import { PatientNameLink } from '../../components/patient/PatientNameLink'
 
 export const RequestsPage: React.FC = () => {
   const { role, currentUser } = useAuth()
+  const { t, language } = useI18n()
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
@@ -116,58 +119,64 @@ export const RequestsPage: React.FC = () => {
 
   const columns: Column<BloodRequest>[] = [
     {
-      header: 'Request ID',
+      header: language === 'ar' ? 'رقم الطلب' : 'Request ID',
       accessorKey: 'requestNumber',
       sortable: true,
       cell: (row) => (
         <div>
-          <span className="font-mono font-bold text-navy text-xs block">{row.requestNumber}</span>
+          <span className="font-mono font-bold text-navy block text-xs">{row.requestNumber}</span>
           <span className="text-[10px] text-secondaryText">{formatDate(row.createdAt)}</span>
         </div>
       ),
     },
     {
-      header: 'Patient & MRN',
+      header: language === 'ar' ? 'المريض والملف الطبي' : 'Patient & File',
       accessorKey: 'patientName',
       sortable: true,
       cell: (row) => (
         <div>
-          <span className="font-semibold text-primaryText block">{row.patientName}</span>
-          <span className="text-[11px] text-secondaryText font-mono">{row.patientMrn || 'MRN-PENDING'}</span>
+          <PatientNameLink patientName={row.patientName} patientIdOrMrn={row.patientMrn || row.patientId} />
+          {row.patientMrn && (
+            <span className="text-[10px] text-secondaryText block font-mono">{row.patientMrn}</span>
+          )}
         </div>
       ),
     },
     {
-      header: 'Blood Group',
+      header: language === 'ar' ? 'الفصيلة' : 'Blood Group',
       accessorKey: 'bloodType',
       sortable: true,
       cell: (row) => <StatusBadge variant="blood">{row.bloodType}</StatusBadge>,
     },
     {
-      header: 'Component & Quantity',
+      header: language === 'ar' ? 'المكون والكمية' : 'Component & Units',
+      accessorKey: 'quantityUnits',
+      sortable: true,
       cell: (row) => (
         <div>
           <span className="font-medium text-primaryText block">
-            {row.quantityUnits} unit(s) • {row.component}
+            {row.quantityUnits} {language === 'ar' ? 'وحدة' : 'unit(s)'} • {row.component}
           </span>
-          <span className="text-[10px] text-secondaryText">Fulfilled: {row.fulfilledUnits} of {row.quantityUnits}</span>
+          <span className="text-[10px] text-secondaryText">
+            {language === 'ar' ? `المصروف: ${row.fulfilledUnits} من ${row.quantityUnits}` : `Fulfilled: ${row.fulfilledUnits} of ${row.quantityUnits}`}
+          </span>
         </div>
       ),
     },
     {
-      header: 'Priority',
+      header: language === 'ar' ? 'الأولوية' : 'Priority',
       accessorKey: 'priority',
       sortable: true,
       cell: (row) => <StatusBadge status={row.priority}>{row.priority}</StatusBadge>,
     },
     {
-      header: 'Status',
+      header: language === 'ar' ? 'الحالة' : 'Status',
       accessorKey: 'status',
       sortable: true,
-      cell: (row) => <StatusBadge status={row.status}>{row.status}</StatusBadge>,
+      cell: (row) => <StatusBadge status={row.status}>{t(`status.${row.status.toLowerCase().replace(' ', '')}`) || row.status}</StatusBadge>,
     },
     {
-      header: 'Needed By',
+      header: language === 'ar' ? 'مطلوب في تاريخ' : 'Needed By',
       accessorKey: 'neededByDate',
       sortable: true,
       cell: (row) => (
@@ -177,7 +186,7 @@ export const RequestsPage: React.FC = () => {
       ),
     },
     {
-      header: 'Actions',
+      header: language === 'ar' ? 'الإجراءات' : 'Actions',
       cell: (row) => (
         <Button
           variant="ghost"
@@ -190,7 +199,7 @@ export const RequestsPage: React.FC = () => {
           leftIcon={<Eye className="w-3.5 h-3.5" />}
           className="text-xs h-7 px-2"
         >
-          Details
+          {t('action.view')}
         </Button>
       ),
     },
@@ -199,9 +208,13 @@ export const RequestsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Blood Transfusion Requests"
-        subtitle="End-to-end transfusion request workflow, clinical urgency triage, and unit allocation."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Requests' }]}
+        title={t('nav.requests')}
+        subtitle={
+          language === 'ar'
+            ? 'مسار إدارة وتخصيص طلبات نقل الدم، وتحديد درجات الخطورة السريرية وصرف الوحدات المعتمدة.'
+            : 'End-to-end transfusion request workflow, clinical urgency triage, and unit allocation.'
+        }
+        breadcrumbs={[{ label: t('nav.dashboard'), href: '/dashboard' }, { label: t('nav.requests') }]}
         actions={
           <Button
             variant="primary"
@@ -209,39 +222,38 @@ export const RequestsPage: React.FC = () => {
             leftIcon={<Plus className="w-4 h-4" />}
             onClick={() => setIsCreateModalOpen(true)}
           >
-            Create Blood Request
+            {language === 'ar' ? '+ إنشاء طلب دم جديد' : '+ Create Blood Request'}
           </Button>
         }
       />
 
       <SearchFilter
-        searchPlaceholder="Search by request # (e.g. REQ-2025) or patient name..."
+        searchPlaceholder={language === 'ar' ? 'بحث برقم الطلب (مثال REQ-2025) أو اسم المريض...' : 'Search by request # or patient name...'}
         searchValue={search}
         onSearchChange={setSearch}
         filterOptions={[
           {
             id: 'priority',
-            label: 'Priority',
+            label: language === 'ar' ? 'الأولوية' : 'Priority',
             currentValue: priorityFilter,
             onChange: setPriorityFilter,
             options: [
-              { label: 'Routine', value: 'Routine' },
-              { label: 'Urgent', value: 'Urgent' },
-              { label: 'Emergency (Stat)', value: 'Emergency (Stat)' },
+              { label: language === 'ar' ? 'عادي (Routine)' : 'Routine', value: 'Routine' },
+              { label: language === 'ar' ? 'عاجل (Urgent)' : 'Urgent', value: 'Urgent' },
+              { label: language === 'ar' ? 'طوارئ حادة (STAT)' : 'Emergency (Stat)', value: 'Emergency (Stat)' },
             ],
           },
           {
             id: 'status',
-            label: 'Status',
+            label: language === 'ar' ? 'الحالة' : 'Status',
             currentValue: statusFilter,
             onChange: setStatusFilter,
             options: [
-              { label: 'Pending', value: 'Pending' },
-              { label: 'Reviewing', value: 'Reviewing' },
-              { label: 'Partially Fulfilled', value: 'Partially Fulfilled' },
-              { label: 'Fulfilled', value: 'Fulfilled' },
-              { label: 'Rejected', value: 'Rejected' },
-              { label: 'Cancelled', value: 'Cancelled' },
+              { label: language === 'ar' ? 'قيد الانتظار' : 'Pending', value: 'Pending' },
+              { label: language === 'ar' ? 'قيد المراجعة' : 'Reviewing', value: 'Reviewing' },
+              { label: language === 'ar' ? 'مكتمل الصرف' : 'Fulfilled', value: 'Fulfilled' },
+              { label: language === 'ar' ? 'مرفوض' : 'Rejected', value: 'Rejected' },
+              { label: language === 'ar' ? 'ملغي' : 'Cancelled', value: 'Cancelled' },
             ],
           },
         ]}
@@ -259,27 +271,29 @@ export const RequestsPage: React.FC = () => {
           setSelectedRequest(row)
           setIsDrawerOpen(true)
         }}
+        emptyTitle={language === 'ar' ? 'لا توجد طلبات نقل دم' : 'No requests found'}
+        emptyDescription={language === 'ar' ? 'لم يتم العثور على طلبات تطابق معايير البحث.' : 'No blood transfusion requests matched your filters.'}
       />
 
       {/* Create Request Modal */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Initiate Transfusion Request"
-        subtitle="Enter patient clinical criteria and urgency requirement"
+        title={language === 'ar' ? 'إنشاء طلب نقل دم سريري جديد' : 'Initiate Transfusion Request'}
+        subtitle={language === 'ar' ? 'أدخل معايير المريض الطبية ومستوى الأولوية العاجلة' : 'Enter patient clinical criteria and urgency requirement'}
       >
         <form onSubmit={handleCreateRequest} className="space-y-4">
           {role !== 'patient' ? (
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Patient Full Name *"
+                label={language === 'ar' ? 'اسم المريض بالكامل *' : 'Patient Full Name *'}
                 value={requestForm.patientName}
                 onChange={(e) => setRequestForm({ ...requestForm, patientName: e.target.value })}
                 placeholder="Layla Hassan"
                 required
               />
               <Input
-                label="Medical Record Number (MRN)"
+                label={language === 'ar' ? 'الرقم الطبي للمريض (MRN)' : 'Medical Record Number (MRN)'}
                 value={requestForm.patientMrn}
                 onChange={(e) => setRequestForm({ ...requestForm, patientMrn: e.target.value })}
                 placeholder="MRN-78291"
@@ -287,14 +301,14 @@ export const RequestsPage: React.FC = () => {
             </div>
           ) : (
             <div className="p-3 bg-surface rounded-xl border border-borderNeutral text-xs text-secondaryText">
-              Submitting request for logged in patient: <strong className="text-primaryText">{currentUser?.fullName}</strong>
+              {language === 'ar' ? 'تقديم الطلب لحساب المريض الحالي: ' : 'Submitting request for logged in patient: '}<strong className="text-primaryText">{currentUser?.fullName}</strong>
             </div>
           )}
 
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-                Blood Group *
+                {language === 'ar' ? 'فصيلة الدم *' : 'Blood Group *'}
               </label>
               <select
                 value={requestForm.bloodType}
@@ -311,23 +325,23 @@ export const RequestsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-                Component *
+                {language === 'ar' ? 'المكون *' : 'Component *'}
               </label>
               <select
                 value={requestForm.component}
                 onChange={(e) => setRequestForm({ ...requestForm, component: e.target.value as ComponentType })}
                 className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none"
               >
-                <option value="Packed Red Blood Cells">Packed Red Blood Cells</option>
-                <option value="Whole Blood">Whole Blood</option>
-                <option value="Platelets">Platelets</option>
-                <option value="Fresh Frozen Plasma">Fresh Frozen Plasma</option>
-                <option value="Cryoprecipitate">Cryoprecipitate</option>
+                <option value="Packed Red Blood Cells">{language === 'ar' ? 'كريات دم حمراء (PRBC)' : 'Packed Red Blood Cells'}</option>
+                <option value="Whole Blood">{language === 'ar' ? 'دم كامل' : 'Whole Blood'}</option>
+                <option value="Platelets">{language === 'ar' ? 'صفائح دموية' : 'Platelets'}</option>
+                <option value="Fresh Frozen Plasma">{language === 'ar' ? 'بلازما مجمدة' : 'Fresh Frozen Plasma'}</option>
+                <option value="Cryoprecipitate">{language === 'ar' ? 'راسب برودي' : 'Cryoprecipitate'}</option>
               </select>
             </div>
 
             <Input
-              label="Quantity (Units) *"
+              label={language === 'ar' ? 'الكمية (وحدات) *' : 'Quantity (Units) *'}
               type="number"
               min={1}
               max={10}
@@ -340,21 +354,21 @@ export const RequestsPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-                Clinical Urgency Priority *
+                {language === 'ar' ? 'درجة الخطورة السريرية *' : 'Clinical Urgency Priority *'}
               </label>
               <select
                 value={requestForm.priority}
                 onChange={(e) => setRequestForm({ ...requestForm, priority: e.target.value as RequestPriority })}
                 className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none"
               >
-                <option value="Routine">Routine (Elective surgery / standard correction)</option>
-                <option value="Urgent">Urgent (Within 4-12 hours)</option>
-                <option value="Emergency (Stat)">Emergency (Stat) — Immediate trauma</option>
+                <option value="Routine">{language === 'ar' ? 'عادي (جراحة مجدولة أو تصحيح قياسي)' : 'Routine (Elective surgery / standard correction)'}</option>
+                <option value="Urgent">{language === 'ar' ? 'عاجل (خلال 4 إلى 12 ساعة)' : 'Urgent (Within 4-12 hours)'}</option>
+                <option value="Emergency (Stat)">{language === 'ar' ? 'طوارئ حادة (STAT) — نزيف فوري' : 'Emergency (Stat) — Immediate trauma'}</option>
               </select>
             </div>
 
             <Input
-              label="Needed By Date & Time *"
+              label={language === 'ar' ? 'تاريخ ووقت الحاجة *' : 'Needed By Date & Time *'}
               type="datetime-local"
               value={requestForm.neededByDate}
               onChange={(e) => setRequestForm({ ...requestForm, neededByDate: e.target.value })}
@@ -363,26 +377,26 @@ export const RequestsPage: React.FC = () => {
           </div>
 
           <Input
-            label="Clinical Indication / Reason *"
+            label={language === 'ar' ? 'السبب السريري / التشخيص *' : 'Clinical Indication / Reason *'}
             value={requestForm.reason}
             onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })}
-            placeholder="e.g. Severe intraoperative hemorrhage, coronary bypass surgery..."
+            placeholder={language === 'ar' ? 'مثال: نزيف حاد أثناء عملية جراحية، فقر دم شديد...' : 'e.g. Severe intraoperative hemorrhage, coronary bypass surgery...'}
             required
           />
 
           <Input
-            label="Special Crossmatch Notes"
+            label={language === 'ar' ? 'ملاحظات فحص المطابقة والتوافق' : 'Special Crossmatch Notes'}
             value={requestForm.clinicalNotes}
             onChange={(e) => setRequestForm({ ...requestForm, clinicalNotes: e.target.value })}
-            placeholder="e.g. Type & Screen validated; irradiated unit preferred."
+            placeholder={language === 'ar' ? 'مثال: فحص الأجسام المضادة معتمد؛ يفضل وحدة مفلترة' : 'e.g. Type & Screen validated; irradiated unit preferred.'}
           />
 
           <div className="pt-3 border-t border-borderNeutral flex justify-end gap-2">
             <Button variant="ghost" size="sm" type="button" onClick={() => setIsCreateModalOpen(false)}>
-              Cancel
+              {t('action.cancel')}
             </Button>
             <Button variant="primary" size="sm" type="submit">
-              Submit Transfusion Request
+              {language === 'ar' ? 'إرسال طلب نقل الدم' : 'Submit Transfusion Request'}
             </Button>
           </div>
         </form>
@@ -394,8 +408,8 @@ export const RequestsPage: React.FC = () => {
         onClose={() => setIsDrawerOpen(false)}
         variant="drawer"
         size="lg"
-        title={selectedRequest ? `Request ${selectedRequest.requestNumber}` : ''}
-        subtitle="Clinical Request Dossier & Status Timeline"
+        title={selectedRequest ? `${language === 'ar' ? 'طلب رقم ' : 'Request '}${selectedRequest.requestNumber}` : ''}
+        subtitle={language === 'ar' ? 'ملف الطلب السريري ومسار التخصيص والصرف' : 'Clinical Request Dossier & Status Timeline'}
         footer={
           selectedRequest && (role === 'hospital' || role === 'admin') ? (
             <div className="flex items-center gap-2">
@@ -403,29 +417,29 @@ export const RequestsPage: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => handleUpdateStatus('Reviewing', 'Crossmatch & antibody screen initiated')}
+                  onClick={() => handleUpdateStatus('Reviewing', language === 'ar' ? 'بدء فحص المطابقة المصلية وفحص الأجسام المضادة' : 'Crossmatch & antibody screen initiated')}
                 >
-                  Mark Reviewing
+                  {language === 'ar' ? 'تحديد كقيد المراجعة' : 'Mark Reviewing'}
                 </Button>
               )}
               {(selectedRequest.status === 'Pending' || selectedRequest.status === 'Reviewing' || selectedRequest.status === 'Partially Fulfilled') && (
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => handleUpdateStatus('Fulfilled', 'Full units issued and dispensed')}
+                  onClick={() => handleUpdateStatus('Fulfilled', language === 'ar' ? 'تم تجهيز وصرف كامل وحدات الدم المطلوبة' : 'Full units issued and dispensed')}
                   leftIcon={<Check className="w-4 h-4" />}
                 >
-                  Fulfill Request
+                  {language === 'ar' ? 'إكمال وصرف الطلب' : 'Fulfill Request'}
                 </Button>
               )}
               {selectedRequest.status !== 'Rejected' && selectedRequest.status !== 'Fulfilled' && (
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => handleUpdateStatus('Rejected', 'Clinical rejection or duplicate order')}
+                  onClick={() => handleUpdateStatus('Rejected', language === 'ar' ? 'رفض الطلب لعدم التوافق أو تكرار الطلب' : 'Clinical rejection or duplicate order')}
                   leftIcon={<X className="w-4 h-4" />}
                 >
-                  Reject
+                  {t('action.reject')}
                 </Button>
               )}
             </div>
@@ -437,27 +451,39 @@ export const RequestsPage: React.FC = () => {
             {/* Header pill summary */}
             <div className="p-4 bg-surface rounded-xl border border-borderNeutral space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-base text-primaryText">{selectedRequest.patientName}</span>
+                <PatientNameLink
+                  patientName={selectedRequest.patientName}
+                  patientIdOrMrn={selectedRequest.patientMrn || selectedRequest.patientId}
+                  className="text-base font-bold text-navy"
+                />
                 <div className="flex gap-1.5">
                   <StatusBadge status={selectedRequest.priority}>{selectedRequest.priority}</StatusBadge>
-                  <StatusBadge status={selectedRequest.status}>{selectedRequest.status}</StatusBadge>
+                  <StatusBadge status={selectedRequest.status}>{t(`status.${selectedRequest.status.toLowerCase().replace(' ', '')}`) || selectedRequest.status}</StatusBadge>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-slate-400">Blood Group</span>
+                  <span className="block text-[10px] uppercase font-bold text-slate-400">
+                    {language === 'ar' ? 'فصيلة الدم' : 'Blood Group'}
+                  </span>
                   <span className="font-bold text-medical text-sm">{selectedRequest.bloodType}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-slate-400">Component</span>
+                  <span className="block text-[10px] uppercase font-bold text-slate-400">
+                    {language === 'ar' ? 'المكون' : 'Component'}
+                  </span>
                   <span className="font-semibold text-primaryText">{selectedRequest.component}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-slate-400">Units Needed</span>
+                  <span className="block text-[10px] uppercase font-bold text-slate-400">
+                    {language === 'ar' ? 'الكمية المطلوبة' : 'Units Needed'}
+                  </span>
                   <span className="font-bold text-primaryText">{selectedRequest.quantityUnits}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-slate-400">Fulfilled</span>
+                  <span className="block text-[10px] uppercase font-bold text-slate-400">
+                    {language === 'ar' ? 'المصروف' : 'Fulfilled'}
+                  </span>
                   <span className="font-bold text-emerald-600">{selectedRequest.fulfilledUnits}</span>
                 </div>
               </div>
@@ -465,7 +491,9 @@ export const RequestsPage: React.FC = () => {
 
             {/* Clinical context */}
             <div className="space-y-2">
-              <h5 className="font-bold uppercase tracking-wider text-[11px] text-navy">Clinical Indication</h5>
+              <h5 className="font-bold uppercase tracking-wider text-[11px] text-navy">
+                {language === 'ar' ? 'السبب السريري / الداعي لنقل الدم' : 'Clinical Indication'}
+              </h5>
               <div className="p-3 bg-white rounded-lg border border-borderNeutral text-primaryText leading-relaxed">
                 {selectedRequest.reason}
               </div>
@@ -473,7 +501,9 @@ export const RequestsPage: React.FC = () => {
 
             {selectedRequest.clinicalNotes && (
               <div className="space-y-2">
-                <h5 className="font-bold uppercase tracking-wider text-[11px] text-navy">Special Lab Instructions</h5>
+                <h5 className="font-bold uppercase tracking-wider text-[11px] text-navy">
+                  {language === 'ar' ? 'تعليمات خاصة بالمختبر والمطابقة' : 'Special Lab Instructions'}
+                </h5>
                 <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-200 text-amber-900 leading-relaxed">
                   {selectedRequest.clinicalNotes}
                 </div>
@@ -483,18 +513,20 @@ export const RequestsPage: React.FC = () => {
             {/* Status Timeline */}
             <div className="space-y-3">
               <h5 className="font-bold uppercase tracking-wider text-[11px] text-navy">
-                Transfusion Audit Timeline
+                {language === 'ar' ? 'مسار وسجل تدقيق الطلب' : 'Transfusion Audit Timeline'}
               </h5>
-              <div className="border-l-2 border-medical-200 ml-3 pl-4 space-y-4">
+              <div className="border-l-2 rtl:border-l-0 rtl:border-r-2 border-medical-200 ml-3 rtl:ml-0 rtl:mr-3 pl-4 rtl:pl-0 rtl:pr-4 space-y-4">
                 {selectedRequest.statusTimeline.map((item, idx) => (
                   <div key={idx} className="relative">
-                    <span className="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-medical border-2 border-white ring-2 ring-medical-100" />
+                    <span className="absolute -left-[23px] rtl:-left-auto rtl:-right-[23px] top-1 w-3 h-3 rounded-full bg-medical border-2 border-white ring-2 ring-medical-100" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-primaryText">{item.status}</span>
+                        <span className="font-bold text-xs text-primaryText">{t(`status.${item.status.toLowerCase().replace(' ', '')}`) || item.status}</span>
                         <span className="text-[10px] text-slate-400">{formatDateTime(item.timestamp)}</span>
                       </div>
-                      <p className="text-[11px] text-secondaryText">Updated by: {item.updatedBy}</p>
+                      <p className="text-[11px] text-secondaryText">
+                        {language === 'ar' ? 'تم التحديث بواسطة: ' : 'Updated by: '}{item.updatedBy}
+                      </p>
                       {item.note && (
                         <p className="text-[11px] text-slate-600 bg-surface-muted p-2 rounded mt-1 border border-borderNeutral/60">
                           {item.note}

@@ -18,11 +18,13 @@ import { StatusBadge } from '../../components/ui/StatusBadge'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
+import { useI18n } from '../../i18n/I18nContext'
 import { inventoryService } from '../../services/inventoryService'
 import { BloodUnit, BloodType, ComponentType, UnitStatus } from '../../types'
 import { formatDate, getDaysUntilExpiry, getExpiryStatus } from '../../lib/utils'
 
 export const InventoryPage: React.FC = () => {
+  const { t, language } = useI18n()
   const [units, setUnits] = useState<BloodUnit[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
@@ -95,7 +97,11 @@ export const InventoryPage: React.FC = () => {
     // Clinical validation: Cannot set status to Allocated if unit is expired
     const days = getDaysUntilExpiry(unitForm.expirationDate)
     if (unitForm.status === 'Allocated' && days < 0) {
-      setFormError('Clinical Safety Violation: Expired blood units cannot be allocated for transfusion.')
+      setFormError(
+        language === 'ar'
+          ? 'مخالفة معايير السلامة السريرية: لا يمكن صرف وحدات دم منتهية الصلاحية لنقل الدم.'
+          : 'Clinical Safety Violation: Expired blood units cannot be allocated for transfusion.'
+      )
       return
     }
 
@@ -154,24 +160,26 @@ export const InventoryPage: React.FC = () => {
 
   const columns: Column<BloodUnit>[] = [
     {
-      header: 'Unit Identifier',
+      header: language === 'ar' ? 'معرف الوحدة' : 'Unit Identifier',
       accessorKey: 'unitNumber',
       sortable: true,
       cell: (row) => (
         <div>
           <span className="font-mono font-bold text-navy block text-xs">{row.unitNumber}</span>
-          <span className="text-[10px] text-secondaryText">Screen: Negative</span>
+          <span className="text-[10px] text-secondaryText">
+            {language === 'ar' ? 'فحص العدوى: سليم' : 'Screen: Negative'}
+          </span>
         </div>
       ),
     },
     {
-      header: 'Blood Group',
+      header: language === 'ar' ? 'فصيلة الدم' : 'Blood Group',
       accessorKey: 'bloodType',
       sortable: true,
       cell: (row) => <StatusBadge variant="blood">{row.bloodType}</StatusBadge>,
     },
     {
-      header: 'Component',
+      header: language === 'ar' ? 'المكون والحجم' : 'Component',
       accessorKey: 'component',
       sortable: true,
       cell: (row) => (
@@ -182,12 +190,12 @@ export const InventoryPage: React.FC = () => {
       ),
     },
     {
-      header: 'Storage Location',
+      header: language === 'ar' ? 'موقع التخزين المبرد' : 'Storage Location',
       accessorKey: 'storageLocation',
       sortable: true,
     },
     {
-      header: 'Expiration & Shelf Life',
+      header: language === 'ar' ? 'تاريخ الصلاحية' : 'Expiration & Shelf Life',
       accessorKey: 'expirationDate',
       sortable: true,
       cell: (row) => {
@@ -203,13 +211,13 @@ export const InventoryPage: React.FC = () => {
       },
     },
     {
-      header: 'Unit Status',
+      header: language === 'ar' ? 'حالة الوحدة' : 'Unit Status',
       accessorKey: 'status',
       sortable: true,
-      cell: (row) => <StatusBadge status={row.status}>{row.status}</StatusBadge>,
+      cell: (row) => <StatusBadge status={row.status}>{t(`status.${row.status.toLowerCase()}`) || row.status}</StatusBadge>,
     },
     {
-      header: 'Actions',
+      header: language === 'ar' ? 'الإجراءات' : 'Actions',
       cell: (row) => (
         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           <Button
@@ -219,16 +227,39 @@ export const InventoryPage: React.FC = () => {
             leftIcon={<Edit2 className="w-3.5 h-3.5" />}
             className="text-xs h-7 px-2"
           >
-            Edit
+            {t('action.edit')}
           </Button>
           {row.status === 'Available' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickStatusChange(row, 'Reserved')}
+                className="text-xs h-7 px-2"
+                title="Reserve for patient request"
+              >
+                {language === 'ar' ? 'حجز' : 'Reserve'}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleQuickStatusChange(row, 'Quarantined')}
+                className="text-xs h-7 px-2 text-amber-700 hover:bg-amber-50"
+                title="Quarantine unit for testing/seal check"
+              >
+                {language === 'ar' ? 'حجر صحي' : 'Quarantine'}
+              </Button>
+            </>
+          )}
+          {row.status === 'Reserved' && (
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
-              onClick={() => handleQuickStatusChange(row, 'Reserved')}
+              onClick={() => handleQuickStatusChange(row, 'Allocated')}
               className="text-xs h-7 px-2"
+              title="Issue for transfusion"
             >
-              Reserve
+              {language === 'ar' ? 'صرف لنقل الدم' : 'Issue'}
             </Button>
           )}
         </div>
@@ -239,80 +270,74 @@ export const InventoryPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Blood Inventory Management"
-        subtitle="Cold-chain verified unit tracking, shelf life monitoring, and clinical quarantine controls."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Inventory' }]}
+        title={t('nav.inventory')}
+        subtitle={
+          language === 'ar'
+            ? 'مراقبة وحدات الدم المبردة فورياً، وفترات الصلاحية، وسجلات الحجر الصحي وتتبع السلسلة.'
+            : 'Track, manage, and audit real-time hospital blood stock and cold-chain compliance.'
+        }
+        breadcrumbs={[{ label: t('nav.dashboard'), href: '/dashboard' }, { label: t('nav.inventory') }]}
         actions={
-          <Button variant="primary" size="md" leftIcon={<Plus className="w-4 h-4" />} onClick={handleOpenAdd}>
-            Add Blood Unit
+          <Button variant="primary" size="sm" onClick={handleOpenAdd} leftIcon={<Plus className="w-4 h-4" />}>
+            {language === 'ar' ? '+ إضافة وحدة دم جديدة' : '+ Add Blood Unit'}
           </Button>
         }
       />
 
-      {/* Expiry & Low Stock Warning Strip */}
-      {(expiringList.length > 0 || lowStockAlerts.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {lowStockAlerts.length > 0 && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-3 text-xs text-rose-800">
-              <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0" />
-              <div>
-                <strong className="block font-semibold">Low-Stock Alert:</strong>
-                <span>
-                  Below threshold (≤ 3 units): {lowStockAlerts.map((l) => `${l.bloodType} (${l.count})`).join(', ')}.
-                </span>
-              </div>
+      {/* Safety & Shortage Banner */}
+      {lowStockAlerts.length > 0 && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-rose-800 text-xs">
+          <div className="flex items-center gap-3">
+            <Flame className="w-5 h-5 text-rose-600 shrink-0" />
+            <div>
+              <strong className="block font-semibold">
+                {language === 'ar' ? 'تحذير سريري لنقص المخزون:' : 'Clinical Safety Low-Stock Warning:'}
+              </strong>
+              <span>
+                {language === 'ar'
+                  ? `الفصائل التالية أقل من حد الأمان: ${lowStockAlerts.map((a) => `${a.bloodType} (${a.currentCount} وحدات)`).join(' • ')}`
+                  : `Safety threshold breached for: ${lowStockAlerts.map((a) => `${a.bloodType} (${a.currentCount} units)`).join(' • ')}`}
+              </span>
             </div>
-          )}
-
-          {expiringList.length > 0 && (
-            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3 text-xs text-amber-800">
-              <Clock className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <div>
-                <strong className="block font-semibold">Rotation Notice:</strong>
-                <span>{expiringList.length} blood unit(s) expiring within 7 days. Prioritize first-in, first-out allocation.</span>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Filter and Search Bar */}
+      {/* Search and Filters */}
       <SearchFilter
-        searchPlaceholder="Search by unit ID (e.g. BU-2025) or storage shelf..."
+        searchPlaceholder={language === 'ar' ? 'بحث برقم الوحدة، الثلاجة أو الرف...' : 'Search by unit ID, fridge or shelf...'}
         searchValue={search}
         onSearchChange={setSearch}
         filterOptions={[
           {
-            id: 'status',
-            label: 'Status',
-            currentValue: statusFilter,
-            onChange: setStatusFilter,
+            id: 'bloodType',
+            label: language === 'ar' ? 'فصيلة الدم' : 'Blood Group',
+            currentValue: typeFilter,
+            onChange: setTypeFilter,
             options: [
-              { label: 'Available', value: 'Available' },
-              { label: 'Reserved', value: 'Reserved' },
-              { label: 'Allocated', value: 'Allocated' },
-              { label: 'Expired', value: 'Expired' },
-              { label: 'Quarantined', value: 'Quarantined' },
+              { label: language === 'ar' ? 'جميع الفصائل' : 'All Types', value: '' },
+              { label: 'O-', value: 'O-' },
+              { label: 'O+', value: 'O+' },
+              { label: 'A-', value: 'A-' },
+              { label: 'A+', value: 'A+' },
+              { label: 'B-', value: 'B-' },
+              { label: 'B+', value: 'B+' },
+              { label: 'AB-', value: 'AB-' },
+              { label: 'AB+', value: 'AB+' },
             ],
           },
           {
-            id: 'bloodType',
-            label: 'Blood Type',
-            currentValue: typeFilter,
-            onChange: setTypeFilter,
-            options: ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'].map((t) => ({ label: t, value: t })),
-          },
-          {
-            id: 'component',
-            label: 'Component',
-            currentValue: componentFilter,
-            onChange: setComponentFilter,
+            id: 'status',
+            label: language === 'ar' ? 'الحالة' : 'Status',
+            currentValue: statusFilter,
+            onChange: setStatusFilter,
             options: [
-              { label: 'Packed Red Blood Cells', value: 'Packed Red Blood Cells' },
-              { label: 'Whole Blood', value: 'Whole Blood' },
-              { label: 'Platelets', value: 'Platelets' },
-              { label: 'Fresh Frozen Plasma', value: 'Fresh Frozen Plasma' },
-              { label: 'Cryoprecipitate', value: 'Cryoprecipitate' },
+              { label: language === 'ar' ? 'جميع الحالات' : 'All Statuses', value: '' },
+              { label: language === 'ar' ? 'متاح للاستخدام' : 'Available', value: 'Available' },
+              { label: language === 'ar' ? 'محجوز' : 'Reserved', value: 'Reserved' },
+              { label: language === 'ar' ? 'مخصص للصرف' : 'Allocated', value: 'Allocated' },
+              { label: language === 'ar' ? 'في الحجر الصحي' : 'Quarantined', value: 'Quarantined' },
+              { label: language === 'ar' ? 'منتهي الصلاحية' : 'Expired', value: 'Expired' },
             ],
           },
         ]}
@@ -324,26 +349,34 @@ export const InventoryPage: React.FC = () => {
         }}
       />
 
-      <DataTable columns={columns} data={filteredUnits} />
+      {/* Main Table */}
+      <DataTable
+        columns={columns}
+        data={filteredUnits}
+        isLoading={isLoading}
+        keyExtractor={(u) => u.id}
+        emptyTitle={language === 'ar' ? 'لا توجد وحدات دم مطابقة' : 'No blood units found'}
+        emptyDescription={language === 'ar' ? 'لم يتم العثور على وحدات دم تطابق معايير التصفية.' : 'Try adjusting your search query or filter parameters.'}
+      />
 
       {/* Add / Edit Unit Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingUnit ? 'Edit Blood Unit' : 'Log New Blood Unit'}
-        subtitle="Hospital Blood Bank Cold-Chain Registry"
+        title={editingUnit ? (language === 'ar' ? 'تعديل بيانات وحدة الدم' : 'Edit Blood Unit') : (language === 'ar' ? 'تسجيل وحدة دم جديدة' : 'Add Blood Unit to Inventory')}
+        subtitle={language === 'ar' ? 'تسجيل مواصفات الوحدة وموقع التخزين المبرد' : 'Log verified blood components into cold-chain storage'}
       >
         <form onSubmit={handleFormSubmit} className="space-y-4">
           {formError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-semibold">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs font-semibold text-rose-800">
               {formError}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-                Blood Group *
+              <label className="block text-xs font-semibold text-secondaryText mb-1">
+                {language === 'ar' ? 'فصيلة الدم' : 'Blood Group'}
               </label>
               <select
                 value={unitForm.bloodType}
@@ -359,80 +392,100 @@ export const InventoryPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-                Component Type *
+              <label className="block text-xs font-semibold text-secondaryText mb-1">
+                {language === 'ar' ? 'مكون الدم' : 'Component Type'}
               </label>
               <select
                 value={unitForm.component}
                 onChange={(e) => setUnitForm({ ...unitForm, component: e.target.value as ComponentType })}
                 className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none"
               >
-                <option value="Packed Red Blood Cells">Packed Red Blood Cells</option>
-                <option value="Whole Blood">Whole Blood</option>
-                <option value="Platelets">Platelets</option>
-                <option value="Fresh Frozen Plasma">Fresh Frozen Plasma</option>
-                <option value="Cryoprecipitate">Cryoprecipitate</option>
+                <option value="Packed Red Blood Cells">{language === 'ar' ? 'كريات دم حمراء مكدسة' : 'Packed Red Blood Cells'}</option>
+                <option value="Whole Blood">{language === 'ar' ? 'دم كامل' : 'Whole Blood'}</option>
+                <option value="Platelets">{language === 'ar' ? 'صفائح دموية' : 'Platelets'}</option>
+                <option value="Fresh Frozen Plasma">{language === 'ar' ? 'بلازما مجمدة' : 'Fresh Frozen Plasma'}</option>
+                <option value="Cryoprecipitate">{language === 'ar' ? 'راسب برودي' : 'Cryoprecipitate'}</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Volume (mL) *"
-              type="number"
-              value={unitForm.volumeMl}
-              onChange={(e) => setUnitForm({ ...unitForm, volumeMl: Number(e.target.value) })}
-              required
-            />
-            <Input
-              label="Storage Location *"
-              value={unitForm.storageLocation}
-              onChange={(e) => setUnitForm({ ...unitForm, storageLocation: e.target.value })}
-              placeholder="e.g. Fridge A - Shelf 2"
-              required
-            />
+            <div>
+              <label className="block text-xs font-semibold text-secondaryText mb-1">
+                {language === 'ar' ? 'الحجم (مل)' : 'Volume (mL)'}
+              </label>
+              <Input
+                type="number"
+                min={50}
+                max={600}
+                value={unitForm.volumeMl}
+                onChange={(e) => setUnitForm({ ...unitForm, volumeMl: Number(e.target.value) })}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-secondaryText mb-1">
+                {language === 'ar' ? 'حالة الوحدة' : 'Initial Status'}
+              </label>
+              <select
+                value={unitForm.status}
+                onChange={(e) => setUnitForm({ ...unitForm, status: e.target.value as UnitStatus })}
+                className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none"
+              >
+                <option value="Available">{language === 'ar' ? 'متاح للاستخدام' : 'Available'}</option>
+                <option value="Reserved">{language === 'ar' ? 'محجوز' : 'Reserved'}</option>
+                <option value="Allocated">{language === 'ar' ? 'مخصص للصرف' : 'Allocated'}</option>
+                <option value="Quarantined">{language === 'ar' ? 'في الحجر الصحي' : 'Quarantined'}</option>
+                <option value="Expired">{language === 'ar' ? 'منتهي الصلاحية' : 'Expired'}</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Collection Date *"
-              type="date"
-              value={unitForm.collectionDate}
-              onChange={(e) => setUnitForm({ ...unitForm, collectionDate: e.target.value })}
-              required
-            />
-            <Input
-              label="Expiration Date *"
-              type="date"
-              value={unitForm.expirationDate}
-              onChange={(e) => setUnitForm({ ...unitForm, expirationDate: e.target.value })}
-              required
-            />
+            <div>
+              <label className="block text-xs font-semibold text-secondaryText mb-1">
+                {language === 'ar' ? 'تاريخ السحب' : 'Collection Date'}
+              </label>
+              <Input
+                type="date"
+                value={unitForm.collectionDate}
+                onChange={(e) => setUnitForm({ ...unitForm, collectionDate: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-secondaryText mb-1">
+                {language === 'ar' ? 'تاريخ انتهاء الصلاحية' : 'Expiration Date'}
+              </label>
+              <Input
+                type="date"
+                value={unitForm.expirationDate}
+                onChange={(e) => setUnitForm({ ...unitForm, expirationDate: e.target.value })}
+                required
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-secondaryText mb-1.5">
-              Unit Status *
+            <label className="block text-xs font-semibold text-secondaryText mb-1">
+              {language === 'ar' ? 'موقع التخزين (الثلاجة / الرف)' : 'Storage Location / Unit Tag'}
             </label>
-            <select
-              value={unitForm.status}
-              onChange={(e) => setUnitForm({ ...unitForm, status: e.target.value as UnitStatus })}
-              className="w-full rounded-lg border border-borderNeutral bg-white px-3 py-2 text-sm text-primaryText focus:border-navy-500 focus:outline-none"
-            >
-              <option value="Available">Available</option>
-              <option value="Reserved">Reserved</option>
-              <option value="Allocated">Allocated</option>
-              <option value="Expired">Expired</option>
-              <option value="Quarantined">Quarantined</option>
-            </select>
+            <Input
+              value={unitForm.storageLocation}
+              onChange={(e) => setUnitForm({ ...unitForm, storageLocation: e.target.value })}
+              placeholder="e.g., Fridge B - Shelf 2"
+              required
+            />
           </div>
 
           <div className="pt-3 border-t border-borderNeutral flex justify-end gap-2">
             <Button variant="ghost" size="sm" type="button" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('action.cancel')}
             </Button>
             <Button variant="primary" size="sm" type="submit">
-              {editingUnit ? 'Save Changes' : 'Register Unit'}
+              {editingUnit ? t('action.save') : (language === 'ar' ? 'إضافة إلى المخزون' : 'Add to Stock')}
             </Button>
           </div>
         </form>

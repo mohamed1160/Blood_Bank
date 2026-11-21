@@ -12,15 +12,21 @@ import {
   MapPin,
   Bell,
   Settings,
-  ShieldAlert,
+  Truck,
+  HeartHandshake,
+  Megaphone,
   ChevronRight,
+  ChevronLeft,
+  Activity,
+  Upload,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { useI18n } from '../../i18n/I18nContext'
 import { UserRole } from '../../types'
 import { cn } from '../../lib/utils'
 
 interface NavItem {
-  label: string
+  labelKey: string
   to: string
   icon: React.ReactNode
   roles: UserRole[]
@@ -29,67 +35,97 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: 'Dashboard',
+    labelKey: 'nav.dashboard',
     to: '/dashboard',
     icon: <LayoutDashboard className="w-5 h-5" />,
     roles: ['admin', 'hospital', 'doctor', 'patient', 'donor'],
   },
   {
-    label: 'Records Management',
+    labelKey: 'nav.records',
     to: '/records',
     icon: <Database className="w-5 h-5" />,
     roles: ['admin', 'doctor', 'hospital'],
   },
   {
-    label: 'Blood Inventory',
+    labelKey: 'nav.inventory',
     to: '/inventory',
     icon: <Layers className="w-5 h-5" />,
     roles: ['hospital'],
   },
   {
-    label: 'Blood Requests',
+    labelKey: 'nav.requests',
     to: '/requests',
     icon: <FileSpreadsheet className="w-5 h-5" />,
     roles: ['admin', 'hospital', 'doctor', 'patient'],
   },
   {
-    label: 'Emergency Finder',
+    labelKey: 'nav.transfers',
+    to: '/transfers',
+    icon: <Truck className="w-5 h-5 text-sky-400" />,
+    roles: ['admin', 'hospital'],
+  },
+  {
+    labelKey: 'nav.emergency',
     to: '/emergency',
     icon: <Flame className="w-5 h-5 text-rose-400" />,
     roles: ['hospital', 'doctor'],
   },
   {
-    label: 'Analytics & AI',
+    labelKey: 'nav.compatibility',
+    to: '/compatibility',
+    icon: <HeartHandshake className="w-5 h-5 text-emerald-400" />,
+    roles: ['admin', 'hospital', 'doctor', 'patient', 'donor'],
+  },
+  {
+    labelKey: 'nav.announcements',
+    to: '/announcements',
+    icon: <Megaphone className="w-5 h-5 text-amber-400" />,
+    roles: ['admin', 'hospital', 'doctor', 'patient', 'donor'],
+  },
+  {
+    labelKey: 'nav.analytics',
     to: '/analytics',
     icon: <BarChart3 className="w-5 h-5" />,
     roles: ['admin', 'hospital'],
   },
   {
-    label: 'Medical Reports',
+    labelKey: 'nav.medicalReports',
     to: '/medical-reports',
     icon: <FileText className="w-5 h-5" />,
     roles: ['doctor', 'hospital', 'patient'],
   },
   {
-    label: 'Donor Management',
+    labelKey: 'nav.bloodAnalyzer',
+    to: '/blood-analyzer',
+    icon: <Activity className="w-5 h-5 text-rose-400" />,
+    roles: ['admin', 'hospital', 'doctor', 'patient', 'donor'],
+  },
+  {
+    labelKey: 'nav.excelImport',
+    to: '/excel-import',
+    icon: <Upload className="w-5 h-5 text-emerald-400" />,
+    roles: ['admin', 'hospital', 'doctor'],
+  },
+  {
+    labelKey: 'nav.donors',
     to: '/donors',
     icon: <Users className="w-5 h-5" />,
     roles: ['admin', 'hospital', 'donor'],
   },
   {
-    label: 'Donation Centers',
+    labelKey: 'nav.centers',
     to: '/centers',
     icon: <MapPin className="w-5 h-5" />,
     roles: ['admin', 'hospital', 'doctor', 'patient', 'donor'],
   },
   {
-    label: 'Notifications',
+    labelKey: 'nav.notifications',
     to: '/notifications',
     icon: <Bell className="w-5 h-5" />,
     roles: ['admin', 'hospital', 'doctor', 'patient', 'donor'],
   },
   {
-    label: 'Profile & Settings',
+    labelKey: 'nav.settings',
     to: '/settings',
     icon: <Settings className="w-5 h-5" />,
     roles: ['admin', 'hospital', 'doctor', 'patient', 'donor'],
@@ -98,6 +134,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export const Sidebar: React.FC<{ onCloseMobile?: () => void }> = ({ onCloseMobile }) => {
   const { role, currentUser } = useAuth()
+  const { t, isRtl } = useI18n()
 
   const allowedNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
 
@@ -121,7 +158,7 @@ export const Sidebar: React.FC<{ onCloseMobile?: () => void }> = ({ onCloseMobil
         <div className="flex items-center justify-between text-xs text-slate-400">
           <span className="uppercase text-[10px] tracking-wider font-bold">Portal Role</span>
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-navy-800 text-rose-300 border border-navy-600">
-            {role}
+            {t(`role.${role}`)}
           </span>
         </div>
       </div>
@@ -146,9 +183,13 @@ export const Sidebar: React.FC<{ onCloseMobile?: () => void }> = ({ onCloseMobil
               <span className="text-current transition-transform group-hover:scale-105">
                 {item.icon}
               </span>
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </div>
-            <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {isRtl ? (
+              <ChevronLeft className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
           </NavLink>
         ))}
       </nav>

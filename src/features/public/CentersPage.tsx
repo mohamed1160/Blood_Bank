@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Phone, Clock, ShieldCheck, ArrowRight, Building2, Droplets } from 'lucide-react'
+import { MapPin, Phone, Clock, ShieldCheck, ArrowRight, Building2, Droplets, ExternalLink } from 'lucide-react'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { SearchFilter } from '../../components/ui/SearchFilter'
 import { Button } from '../../components/ui/Button'
@@ -8,12 +8,14 @@ import { recordsService } from '../../services/recordsService'
 import { DonationCenter, BloodType } from '../../types'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { EmptyState } from '../../components/shared/EmptyState'
+import { useI18n } from '../../i18n/I18nContext'
 
 export const CentersPage: React.FC = () => {
   const [centers, setCenters] = useState<DonationCenter[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
   const [selectedBloodType, setSelectedBloodType] = useState<string>('')
+  const { t, language } = useI18n()
 
   useEffect(() => {
     recordsService
@@ -39,19 +41,26 @@ export const CentersPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <PageHeader
-        title="Donation Centers"
-        subtitle="Find verified blood donation centers, regional collection hubs, and mobile units near you."
-        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Donation Centers' }]}
+        title={t('public.centers')}
+        subtitle={
+          language === 'ar'
+            ? 'البحث عن مراكز التبرع بالدم المعتمدة، وبنوك الدم الإقليمية، والوحدات المتنقلة بالقرب منك.'
+            : 'Find verified blood donation centers, regional collection hubs, and mobile units near you.'
+        }
+        breadcrumbs={[
+          { label: t('public.home'), href: '/' },
+          { label: t('public.centers') },
+        ]}
       />
 
       <SearchFilter
-        searchPlaceholder="Search center by name, street or city..."
+        searchPlaceholder={language === 'ar' ? 'بحث عن مركز بالاسم أو المدينة أو العنوان...' : 'Search center by name, street or city...'}
         searchValue={search}
         onSearchChange={setSearch}
         filterOptions={[
           {
             id: 'bloodType',
-            label: 'Blood Type Needed',
+            label: language === 'ar' ? 'الفصيلة المطلوبة' : 'Blood Type Needed',
             currentValue: selectedBloodType,
             onChange: setSelectedBloodType,
             options: [
@@ -76,8 +85,12 @@ export const CentersPage: React.FC = () => {
         <LoadingState variant="table" rows={4} />
       ) : filteredCenters.length === 0 ? (
         <EmptyState
-          title="No centers found"
-          description="Try broadening your search query or removing the blood type filter."
+          title={language === 'ar' ? 'لم يتم العثور على مراكز' : 'No centers found'}
+          description={
+            language === 'ar'
+              ? 'يرجى تجربة كلمات بحث أخرى أو إلغاء تصفية الفصيلة.'
+              : 'Try broadening your search query or removing the blood type filter.'
+          }
           action={
             <Button
               variant="outline"
@@ -87,7 +100,7 @@ export const CentersPage: React.FC = () => {
                 setSelectedBloodType('')
               }}
             >
-              Reset Filters
+              {language === 'ar' ? 'إعادة ضبط التصفية' : 'Reset Filters'}
             </Button>
           }
         />
@@ -101,21 +114,21 @@ export const CentersPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-surface-muted text-medical border border-borderNeutral">
+                    <div className="p-2.5 rounded-xl bg-surface-muted text-medical border border-borderNeutral shrink-0">
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-primaryText leading-snug">{center.name}</h3>
                       <p className="text-xs text-secondaryText flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-slate-400" />
+                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                         {center.city}
                       </p>
                     </div>
                   </div>
                   {center.isVerified && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                       <ShieldCheck className="w-3 h-3" />
-                      Verified
+                      {t('public.verified')}
                     </span>
                   )}
                 </div>
@@ -139,15 +152,15 @@ export const CentersPage: React.FC = () => {
                 <div className="pt-2">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-secondaryText mb-1.5 flex items-center gap-1">
                     <Droplets className="w-3 h-3 text-medical" />
-                    Accepting Types:
+                    {language === 'ar' ? 'الفصائل المطلوبة حالياً:' : 'Accepting Types:'}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {center.availableBloodTypes.map((t) => (
+                    {center.availableBloodTypes.map((bType) => (
                       <span
-                        key={t}
+                        key={bType}
                         className="px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-muted text-navy border border-borderNeutral"
                       >
-                        {t}
+                        {bType}
                       </span>
                     ))}
                   </div>
@@ -155,12 +168,18 @@ export const CentersPage: React.FC = () => {
               </div>
 
               <div className="pt-5 mt-4 border-t border-borderNeutral/60 flex items-center justify-between">
-                <span className="text-[11px] text-secondaryText">
-                  Capacity: <strong className="text-primaryText">{center.capacityPerDay}</strong> / day
-                </span>
+                <a
+                  href={center.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(center.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold text-medical hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {t('action.directions')}
+                </a>
                 <Link to={`/centers/${center.id}`}>
-                  <Button variant="primary" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                    View Details
+                  <Button variant="primary" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />}>
+                    {t('public.details')}
                   </Button>
                 </Link>
               </div>

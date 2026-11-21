@@ -13,14 +13,133 @@
     --color-border: #E2E8F0;
   }
 
+  html.dark {
+    --color-medical: #EF5350;
+    --color-navy: #0B131F;
+    --color-bg: #090E17;
+    --color-card: #111A29;
+    --color-text-primary: #F1F5F9;
+    --color-text-secondary: #94A3B8;
+    --color-border: #1E2E44;
+  }
+
   body {
     background-color: var(--color-bg);
     color: var(--color-text-primary);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
-/* Custom scrollbars for tables, sidebars, and drawers */
+/* Dark mode comprehensive overrides */
+html.dark .bg-white {
+  background-color: #111A29 !important;
+}
+
+html.dark .bg-surface {
+  background-color: #090E17 !important;
+}
+
+html.dark .bg-surface-muted {
+  background-color: #162235 !important;
+}
+
+html.dark .border-borderNeutral {
+  border-color: #1E2E44 !important;
+}
+
+html.dark .border-borderNeutral\/70,
+html.dark .border-borderNeutral\/60,
+html.dark .border-borderNeutral\/50 {
+  border-color: #1E2E44 !important;
+}
+
+html.dark .text-navy {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-primaryText {
+  color: #F1F5F9 !important;
+}
+
+html.dark .text-secondaryText {
+  color: #94A3B8 !important;
+}
+
+html.dark header.bg-white\/95 {
+  background-color: rgba(17, 26, 41, 0.95) !important;
+}
+
+html.dark .shadow-card,
+html.dark .shadow-sm {
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark input, 
+html.dark select, 
+html.dark textarea {
+  background-color: #162235 !important;
+  color: #F1F5F9 !important;
+  border-color: #24354D !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+html.dark table tbody tr:hover {
+  background-color: #162235 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-gray-50 {
+  background-color: #141E2E !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-800,
+html.dark .text-gray-700,
+html.dark .text-gray-800 {
+  color: #E2E8F0 !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-gray-600 {
+  color: #94A3B8 !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-gray-200 {
+  border-color: #1E2E44 !important;
+}
+
+html.dark .from-white {
+  --tw-gradient-from: #090E17 var(--tw-gradient-from-position) !important;
+}
+
+html.dark .to-surface {
+  --tw-gradient-to: #0D1522 var(--tw-gradient-to-position) !important;
+}
+
+/* Cool neon glow for medical accents in dark mode */
+html.dark .bg-medical-50 {
+  background-color: rgba(198, 40, 40, 0.15) !important;
+}
+
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+html.dark .bg-navy-50 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -35,8 +154,16 @@
   border-radius: 9999px;
 }
 
+html.dark ::-webkit-scrollbar-thumb {
+  background: #2D3D54;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #415570;
 }
 
 /* Subtle badge pulse for critical alerts */
